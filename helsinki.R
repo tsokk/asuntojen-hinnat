@@ -27,3 +27,13 @@ b[["(Intercept)"]] + b[["factor(location)Harju"]] + 55*b[["area"]]
 
 # on likimain saman hintainen, kuin 100-neliöinen omakotitalo Pakilassa
 b[["(Intercept)"]] + b[["factor(location)Pakila"]] + 100*b[["area"]] + b[["factor(housetype)ok"]]
+
+# sama käyttäen predict-funtiota
+x.harju = data.frame(location = "Harju", area = 55, housetype = "kt")
+predict(fit.0, x.harju)
+x.pakila = data.frame(location = "Pakila", area = 100, housetype = "ok")
+predict(fit.0, x.pakila)
+
+# estimaatit ja niiden 95 % luottamusvälit
+predict(fit.0, x.harju, interval = "prediction", level = 0.95)
+predict(fit.0, x.pakila, interval="prediction", level = 0.95)
