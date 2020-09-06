@@ -11,9 +11,14 @@ pdata <- transform(pdata, year=as.numeric(as.character(year)))
 pdata <- transform(pdata, lot=replace(lot, lot == "vuokra ", "vuokra"))
 pdata <- transform(pdata, lot=replace(lot, lot == " ", ""))
 pdata <- transform(pdata, location=replace(location, location == "harju", "Harju"))
+pdata <- transform(pdata, location=replace(location, location == "Kallio, harju", "Harju"))
+pdata <- transform(pdata, location=replace(location, location == "Pikku-huopalahti", "Pikku-Huopalahti"))
+pdata <- transform(pdata, location=replace(location, location == "Pikku huopalahti", "Pikku-Huopalahti"))
+pdata <- transform(pdata, location=replace(location, location == "Vanha-vuosaari", "Vuosaari"))
 
 # poistetaan asunnot joiden sijaintia ei tunneta
 pdata <- pdata[which(pdata$location != ""),]
+pdata <- pdata[which(pdata$location != "Helsinki"),]
 
 fit.0 <- lm(price.1000 ~ factor(location) +
     area + 
@@ -37,3 +42,34 @@ predict(fit.0, x.pakila)
 # estimaatit ja niiden 95 % luottamusvälit
 predict(fit.0, x.harju, interval = "prediction", level = 0.95)
 predict(fit.0, x.pakila, interval="prediction", level = 0.95)
+
+# asuntokauppojen lukumäärän ennustaminen
+location.counts <- aggregate(pdata$price.1000,
+    list(Sijainti = pdata$location, Talotyyppi = pdata$housetype),
+    function(x) length(x))
+
+location.price.median <- aggregate(pdata$price.1000,
+    list(Sijainti = pdata$location, Talotyyppi = pdata$housetype),
+    median)
+
+location.area.median <- aggregate(pdata$area,
+    list(Sijainti = pdata$location, Talotyyppi = pdata$housetype),
+    median)
+
+cdata <- location.counts
+cdata$y <- location.price.median$x
+cdata$z <- location.area.median$x
+
+names(cdata) <- c("Sijainti", "Talotyyppi", "Lkm", "Hinta", "Koko")
+
+require(VGAM)
+fit.1 <- vglm(Lkm ~ factor(Sijainti) +
+    factor(Talotyyppi) + Hinta + Koko,
+    pospoisson, data = cdata)
+summary(fit.1)
+x.kontula <- data.frame(Sijainti = "Kontula",
+    Talotyyppi = "kt", Koko = 100, "Hinta" = 200)
+predict(fit.1, x.kontula)
+x.kulosaari <- data.frame(Sijainti = "Kulosaari",
+    Talotyyppi = "kt", Koko = 100, "Hinta" = 400)
+predict(fit.1, x.kulosaari)
